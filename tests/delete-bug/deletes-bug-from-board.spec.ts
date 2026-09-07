@@ -1,7 +1,6 @@
-import { test, expect, type APIRequestContext } from '@playwright/test';
-import { randomUUID } from 'node:crypto';
-import { BoardPage } from '../pages/BoardPage';
-import { LoginPage } from '../pages/LoginPage';
+import { test, expect } from "../fixtures/boardPage.fixture";
+import type { APIRequestContext } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 
 type Bug = {
   id: number;
@@ -12,29 +11,27 @@ type Bug = {
   state: string;
 };
 
-const username = 'buggy';
-const password = '1970beetle';
+const username = "buggy";
+const password = "1970beetle";
 
 async function createBug(request: APIRequestContext, title: string) {
-  const response = await request.post('/api/bugs', {
+  const response = await request.post("/api/bugs", {
     data: {
       title,
-      severity: 'HIGH',
+      severity: "HIGH",
       owner: username,
-      description: 'Delete board row test bug.',
+      description: "Delete board row test bug.",
     },
   });
   expect(response.status()).toBe(201);
   return (await response.json()) as Bug;
 }
 
-test.describe('Delete Bug', () => {
+test.describe("Delete Bug", () => {
   let createdBugId: number | undefined;
   let createdBugTitle: string;
 
-  test.beforeEach(async ({ page, request }) => {
-    const loginPage = new LoginPage(page);
-    const boardPage = new BoardPage(page);
+  test.beforeEach(async ({ loginPage, boardPage, request }) => {
     await loginPage.goto();
     await loginPage.login(username, password);
     createdBugTitle = `Delete board row test ${randomUUID()}`;
@@ -51,14 +48,20 @@ test.describe('Delete Bug', () => {
     }
   });
 
-  test('closes the modal and removes the deleted bug from the board', async ({ page }) => {
-    const boardPage = new BoardPage(page);
+  test("closes the modal and removes the deleted bug from the board", async ({
+    page,
+    boardPage,
+  }) => {
     await boardPage.openBug(createdBugTitle);
     const dialog = boardPage.editDialog();
     const deleteResponsePromise = page.waitForResponse(
-      (response) => response.url().includes(`/api/bugs/${createdBugId}`) && response.request().method() === 'DELETE'
+      (response) =>
+        response.url().includes(`/api/bugs/${createdBugId}`) &&
+        response.request().method() === "DELETE"
     );
-    await boardPage.dialogButton('Delete').click();
+    await boardPage.dialogButton("Delete").click();
+    await expect(boardPage.deleteConfirmationDialog()).toBeVisible();
+    await boardPage.confirmationButton("Delete").click();
 
     const deleteResponse = await deleteResponsePromise;
     expect(deleteResponse.status()).toBe(204);

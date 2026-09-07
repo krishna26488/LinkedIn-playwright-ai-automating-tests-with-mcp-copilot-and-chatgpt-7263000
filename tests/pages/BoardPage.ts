@@ -41,7 +41,7 @@ export class BoardPage {
     return this.page.getByRole('button').filter({ hasText: title }).first();
   }
 
-  bugTitle(title: string) {
+  bugTitle(title: string | RegExp) {
     return this.page.getByRole('cell', { name: title, exact: true });
   }
 
@@ -58,7 +58,11 @@ export class BoardPage {
   }
 
   editDialog() {
-    return this.page.getByRole('dialog');
+    return this.page.getByRole('dialog', { name: /^Edit bug #/ });
+  }
+
+  deleteConfirmationDialog() {
+    return this.page.getByRole('dialog', { name: 'Delete bug?' });
   }
 
   dialogField(label: string) {
@@ -67,6 +71,10 @@ export class BoardPage {
 
   dialogButton(name: string) {
     return this.editDialog().getByRole('button', { name, exact: true });
+  }
+
+  confirmationButton(name: string) {
+    return this.deleteConfirmationDialog().getByRole('button', { name, exact: true });
   }
 
   async searchFor(title: string) {

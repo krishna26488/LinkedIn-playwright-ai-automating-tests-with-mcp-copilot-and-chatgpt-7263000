@@ -1,7 +1,6 @@
-import { test, expect, type APIRequestContext } from '@playwright/test';
-import { randomUUID } from 'node:crypto';
-import { BoardPage } from '../pages/BoardPage';
-import { LoginPage } from '../pages/LoginPage';
+import { test, expect } from "../fixtures/boardPage.fixture";
+import type { APIRequestContext } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 
 type Bug = {
   id: number;
@@ -12,29 +11,27 @@ type Bug = {
   state: string;
 };
 
-const username = 'buggy';
-const password = '1970beetle';
+const username = "buggy";
+const password = "1970beetle";
 
 async function createBug(request: APIRequestContext, title: string) {
-  const response = await request.post('/api/bugs', {
+  const response = await request.post("/api/bugs", {
     data: {
       title,
-      severity: 'HIGH',
+      severity: "HIGH",
       owner: username,
-      description: 'Delete persistence test bug.',
+      description: "Delete persistence test bug.",
     },
   });
   expect(response.status()).toBe(201);
   return (await response.json()) as Bug;
 }
 
-test.describe('Delete Bug', () => {
+test.describe("Delete Bug", () => {
   let createdBugId: number | undefined;
   let createdBugTitle: string;
 
-  test.beforeEach(async ({ page, request }) => {
-    const loginPage = new LoginPage(page);
-    const boardPage = new BoardPage(page);
+  test.beforeEach(async ({ loginPage, boardPage, request }) => {
     await loginPage.goto();
     await loginPage.login(username, password);
     createdBugTitle = `Delete persistence test ${randomUUID()}`;
@@ -51,11 +48,14 @@ test.describe('Delete Bug', () => {
     }
   });
 
-  test('does not restore the deleted bug after a board reload', async ({ page, request }) => {
-    const boardPage = new BoardPage(page);
+  test("does not restore the deleted bug after a board reload", async ({
+    boardPage,
+    request,
+  }) => {
     await boardPage.openBug(createdBugTitle);
     const dialog = boardPage.editDialog();
-    await boardPage.dialogButton('Delete').click();
+    await boardPage.dialogButton("Delete").click();
+    await boardPage.confirmationButton("Delete").click();
     await expect(dialog).not.toBeVisible();
     await expect(boardPage.bugTitle(createdBugTitle)).not.toBeVisible();
 

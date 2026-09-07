@@ -1,7 +1,6 @@
-import { test, expect, type APIRequestContext } from '@playwright/test';
-import { randomUUID } from 'node:crypto';
-import { BoardPage } from '../pages/BoardPage';
-import { LoginPage } from '../pages/LoginPage';
+import { test, expect } from "../fixtures/boardPage.fixture";
+import type { APIRequestContext, Request } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 
 type Bug = {
   id: number;
@@ -12,28 +11,26 @@ type Bug = {
   state: string;
 };
 
-const username = 'buggy';
-const password = '1970beetle';
+const username = "buggy";
+const password = "1970beetle";
 
 async function createBug(request: APIRequestContext, title: string) {
-  const response = await request.post('/api/bugs', {
+  const response = await request.post("/api/bugs", {
     data: {
       title,
-      severity: 'HIGH',
+      severity: "HIGH",
       owner: username,
-      description: 'Delete button test bug.',
+      description: "Delete button test bug.",
     },
   });
   expect(response.status()).toBe(201);
   return (await response.json()) as Bug;
 }
 
-test.describe('Delete Bug', () => {
+test.describe("Delete Bug", () => {
   let createdBugId: number | undefined;
 
-  test.beforeEach(async ({ page, request }) => {
-    const loginPage = new LoginPage(page);
-    const boardPage = new BoardPage(page);
+  test.beforeEach(async ({ loginPage, boardPage, request }) => {
     await loginPage.goto();
     await loginPage.login(username, password);
     const title = `Delete button test ${randomUUID()}`;
@@ -50,13 +47,44 @@ test.describe('Delete Bug', () => {
     }
   });
 
-  test('shows the delete button in the edit modal', async ({ page }) => {
-    const boardPage = new BoardPage(page);
-    await boardPage.openBug('Delete button test');
+  test("shows the delete button in the edit modal", async ({ boardPage }) => {
+    await boardPage.openBug("Delete button test");
     const dialog = boardPage.editDialog();
-    await expect(dialog).toHaveRole('dialog');
-    await expect(boardPage.dialogButton('Delete')).toBeVisible();
-    await expect(boardPage.dialogButton('Cancel')).toBeVisible();
-    await expect(boardPage.dialogButton('Save')).toBeVisible();
+    await expect(dialog).toHaveRole("dialog");
+    await expect(boardPage.dialogButton("Delete")).toBeVisible();
+    await expect(boardPage.dialogButton("Cancel")).toBeVisible();
+    await expect(boardPage.dialogButton("Save")).toBeVisible();
+  });
+
+  test("shows a confirmation modal before deleting", async ({ boardPage }) => {
+    await boardPage.openBug("Delete button test");
+    await boardPage.dialogButton("Delete").click();
+
+    const confirmation = boardPage.deleteConfirmationDialog();
+    await expect(confirmation).toBeVisible();
+    await expect(confirmation).toContainText("Are you sure you want to delete this bug?");
+    await expect(boardPage.confirmationButton("Cancel")).toBeVisible();
+    await expect(boardPage.confirmationButton("Delete")).toBeVisible();
+  });
+
+  test("cancelling deletion keeps the bug and edit modal open", async ({ page, boardPage }) => {
+    await boardPage.openBug("Delete button test");
+    const editDialog = boardPage.editDialog();
+    const deleteRequests: Request[] = [];
+    const requestHandler = (request: Request) => {
+      if (request.method() === "DELETE" && request.url().includes("/api/bugs/")) {
+        deleteRequests.push(request);
+      }
+    };
+    page.on("request", requestHandler);
+
+    await boardPage.dialogButton("Delete").click();
+    await boardPage.confirmationButton("Cancel").click();
+    page.off("request", requestHandler);
+
+    expect(deleteRequests).toHaveLength(0);
+    await expect(boardPage.deleteConfirmationDialog()).not.toBeVisible();
+    await expect(editDialog).toBeVisible();
+    await expect(boardPage.bugTitle(/Delete button test/)).toBeVisible();
   });
 });
