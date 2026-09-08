@@ -61,6 +61,6 @@ test('create a bug then edit it to Closed and capture screenshots', async ({ pag
   // Show Closed bugs and verify the bug appears there
   await board.closedFilterButton.click();
   const closedRow = board.bugRow(title);
-  await expect(closedRow).not.toBeVisible();
+  await expect(closedRow).toBeVisible();
   await page.screenshot({ path: join(screenshotsDir, '07-bug-closed-in-board.png'), fullPage: true });
 });
