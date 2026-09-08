@@ -5,7 +5,8 @@ test.describe('Delete Bug - from details view', () => {
   let title: string;
 
   test.beforeEach(async ({ page, loginPage, boardPage, createBugModal }) => {
-    await loginPage.loginWithFirstUser();
+    await loginPage.goto();
+    await loginPage.login('buggy', '1970beetle');
     title = `delete-bug-${Date.now()}`;
     await createBug(page, title, boardPage, createBugModal);
   });
@@ -16,12 +17,11 @@ test.describe('Delete Bug - from details view', () => {
 
   test('should_delete_from_details_view', async ({ page, boardPage, editBugModal }) => {
     // Act - open details (row click)
-    await boardPage.clickBugByTitle(title);
+    await boardPage.openBug(title);
     await expect(editBugModal.dialog).toBeVisible();
     await editBugModal.delete();
 
     // Assert
-    const titleLocator = page.locator('table[aria-label="Bugs"] >> text=' + title);
-    await expect(titleLocator).toHaveCount(0);
+    await expect(boardPage.bugTitle(title)).not.toBeVisible();
   });
 });

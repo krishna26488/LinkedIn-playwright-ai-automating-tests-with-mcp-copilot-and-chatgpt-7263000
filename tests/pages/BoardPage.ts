@@ -65,12 +65,16 @@ export class BoardPage {
     return this.page.getByRole('dialog', { name: 'Delete bug?' });
   }
 
+  activeBugDialog() {
+    return this.createBugDialog().or(this.editDialog());
+  }
+
   dialogField(label: string) {
-    return this.editDialog().getByLabel(label);
+    return this.activeBugDialog().getByLabel(label);
   }
 
   dialogButton(name: string) {
-    return this.editDialog().getByRole('button', { name, exact: true });
+    return this.activeBugDialog().getByRole('button', { name, exact: true });
   }
 
   confirmationButton(name: string) {

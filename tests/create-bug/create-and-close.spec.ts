@@ -22,7 +22,7 @@ test('create a bug then edit it to Closed and capture screenshots', async ({ pag
   await page.screenshot({ path: join(screenshotsDir, '01-logged-in.png'), fullPage: true });
 
   const board = new BoardPage(page);
-  await board.clickNewBugButton();
+  await board.newBugButton.click();
   await page.screenshot({ path: join(screenshotsDir, '02-create-modal-open.png') });
 
   const createModal = new CreateBugModal(page);
@@ -37,31 +37,30 @@ test('create a bug then edit it to Closed and capture screenshots', async ({ pag
   await createModal.submit();
 
   // Wait for the new bug to appear in the table
-  const row = await board.getBugRowByTitle(title);
+  const row = board.bugRow(title);
   await expect(row).toBeVisible();
   await page.screenshot({ path: join(screenshotsDir, '04-bug-created.png'), fullPage: true });
 
   // Open the bug for editing
-  await board.clickBugByTitle(title);
+  await board.openBug(title);
   // Wait for edit dialog to appear
-  await page.waitForSelector('[role="dialog"]');
+  const editDialog = board.editDialog();
+  await expect(editDialog).toBeVisible();
   await page.screenshot({ path: join(screenshotsDir, '05-edit-modal-open.png') });
 
-  // Change state to Closed (select in the edit dialog has id edit-bug-state)
-  const stateSelect = page.locator('#edit-bug-state');
+  // Change state to Closed
+  const stateSelect = editDialog.getByLabel('State');
   await stateSelect.selectOption({ value: 'closed' });
   await page.screenshot({ path: join(screenshotsDir, '06-state-set-to-closed.png') });
 
   // Click Save in edit modal
-  await page.getByRole('button', { name: 'Save' }).click();
+  await board.dialogButton('Save').click();
   // Wait for modal to close and board to refresh
-  await page.waitForSelector('[role="dialog"]', { state: 'hidden' });
+  await expect(editDialog).toBeHidden();
 
   // Show Closed bugs and verify the bug appears there
-  await page.getByRole('button', { name: 'Closed' }).click();
-  // Wait a moment for fetch to complete
-  await page.waitForTimeout(500);
-  const closedRow = await board.getBugRowByTitle(title);
+  await board.closedFilterButton.click();
+  const closedRow = board.bugRow(title);
   await expect(closedRow).toBeVisible();
   await page.screenshot({ path: join(screenshotsDir, '07-bug-closed-in-board.png'), fullPage: true });
 });

@@ -11,10 +11,10 @@ export class EditBugModal {
 
   constructor(page: Page) {
     this.page = page;
-    this.dialog = page.getByRole('dialog', { name: /Edit bug/ });
+    this.dialog = page.getByRole('dialog', { name: /^Edit bug #/ });
     this.deleteButton = this.dialog.getByRole('button', { name: 'Delete' });
-    this.cancelButton = this.dialog.getByRole('button', { name: 'Cancel' });
-    this.confirmationDialog = page.getByRole('dialog', { name: 'Confirm delete' });
+    this.cancelButton = this.dialog.locator('form').getByRole('button', { name: 'Cancel' });
+    this.confirmationDialog = page.getByRole('dialog', { name: 'Delete bug?' });
     this.confirmDeleteButton = this.confirmationDialog.getByRole('button', { name: 'Delete' });
     this.cancelDeleteConfirmationButton = this.confirmationDialog.getByRole('button', { name: 'Cancel' });
   }

@@ -5,7 +5,8 @@ test.describe('Delete Bug - create then delete', () => {
   let title: string;
 
   test.beforeEach(async ({ page, loginPage, boardPage, createBugModal }) => {
-    await loginPage.loginWithFirstUser();
+    await loginPage.goto();
+    await loginPage.login('buggy', '1970beetle');
     title = `delete-bug-${Date.now()}`;
     await createBug(page, title, boardPage, createBugModal);
   });
@@ -16,12 +17,11 @@ test.describe('Delete Bug - create then delete', () => {
 
   test('should_create_then_delete_bug', async ({ page, boardPage, editBugModal }) => {
     // Act
-    await boardPage.clickBugByTitle(title);
+    await boardPage.openBug(title);
     await expect(editBugModal.dialog).toBeVisible();
     await editBugModal.delete();
 
     // Assert
-    const titleLocator = page.locator('table[aria-label="Bugs"] >> text=' + title);
-    await expect(titleLocator).toHaveCount(0);
+    await expect(boardPage.bugTitle(title)).not.toBeVisible();
   });
 });

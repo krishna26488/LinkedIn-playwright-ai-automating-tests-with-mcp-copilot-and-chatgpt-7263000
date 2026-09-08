@@ -9,7 +9,7 @@ export async function createBug(
   boardPage: BoardPage,
   createBugModal: CreateBugModal,
 ) {
-  await boardPage.clickNewBugButton();
+  await boardPage.openCreateBug();
   await expect(createBugModal.dialog).toBeVisible();
   await createBugModal.fillBugForm({
     title,
@@ -19,8 +19,7 @@ export async function createBug(
   });
   await createBugModal.submit();
 
-  const row = page.locator('table[aria-label="Bugs"] >> text=' + title).first();
-  await row.waitFor({ state: 'visible', timeout: 5000 });
+  await expect(boardPage.bugTitle(title)).toBeVisible();
 }
 
 export async function deleteBugIfExists(
@@ -29,7 +28,7 @@ export async function deleteBugIfExists(
   boardPage: BoardPage,
   editBugModal: EditBugModal,
 ) {
-  const locator = page.locator('table[aria-label="Bugs"] >> text=' + title);
+  const locator = boardPage.bugTitle(title);
   const count = await locator.count();
   if (count === 0) return;
 
@@ -40,7 +39,7 @@ export async function deleteBugIfExists(
     await editBugModal.cancel();
   }
 
-  await boardPage.clickBugByTitle(title);
+  await boardPage.openBug(title);
   await expect(editBugModal.dialog).toBeVisible();
   await editBugModal.delete();
 
