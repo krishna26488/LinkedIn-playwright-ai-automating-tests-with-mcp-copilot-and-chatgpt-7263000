@@ -1,4 +1,5 @@
 import { test, expect } from "../fixtures/boardPage.fixture";
+import { randomUUID } from "node:crypto";
 
 const bugData = [
   {
@@ -66,14 +67,20 @@ const bugData = [
 
 test.describe("Search Bug", () => {
   let createdBugIds: number[] = [];
+  let createdBugs: typeof bugData = [];
 
-  test.beforeEach(async ({ loginPage, boardPage, request }) => {
+  test.beforeEach(async ({ loginPage, boardPage, request }, testInfo) => {
     await loginPage.goto();
     await loginPage.login("buggy", "1970beetle");
 
-    // Create 10 bugs via API
+    const testId = `${testInfo.workerIndex}-${randomUUID()}`;
+    createdBugs = bugData.map((bug) => ({
+      ...bug,
+      title: `${bug.title} [${testId}]`,
+    }));
+
     createdBugIds = [];
-    for (const bug of bugData) {
+    for (const bug of createdBugs) {
       const response = await request.post("/api/bugs", { data: bug });
       const body = await response.json();
       createdBugIds.push(body.id);
@@ -88,6 +95,7 @@ test.describe("Search Bug", () => {
       await request.delete(`/api/bugs/${id}`);
     }
     createdBugIds = [];
+    createdBugs = [];
   });
 
   test("shows all bugs when the search matches every title", async ({
@@ -95,7 +103,7 @@ test.describe("Search Bug", () => {
   }) => {
     await boardPage.searchFor("page");
 
-    for (const bug of bugData) {
+    for (const bug of createdBugs) {
       await expect(boardPage.bugTitle(bug.title)).toBeVisible();
     }
   });
@@ -105,11 +113,11 @@ test.describe("Search Bug", () => {
   }) => {
     await boardPage.searchFor("login");
 
-    for (const bug of bugData.filter((bug) => bug.title.includes("Login"))) {
+    for (const bug of createdBugs.filter((bug) => bug.title.includes("Login"))) {
       await expect(boardPage.bugTitle(bug.title)).toBeVisible();
     }
 
-    for (const bug of bugData.filter((bug) => !bug.title.includes("Login"))) {
+    for (const bug of createdBugs.filter((bug) => !bug.title.includes("Login"))) {
       await expect(boardPage.bugTitle(bug.title)).not.toBeVisible();
     }
   });
@@ -121,7 +129,7 @@ test.describe("Search Bug", () => {
 
     await expect(boardPage.bugTitle("No bugs matched.")).toBeVisible();
 
-    for (const bug of bugData) {
+    for (const bug of createdBugs) {
       await expect(boardPage.bugTitle(bug.title)).not.toBeVisible();
     }
   });
